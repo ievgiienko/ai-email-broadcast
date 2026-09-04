@@ -24,10 +24,27 @@ if (!secret) {
 }
 
 let stopping = false;
+/** Set while sleeping between ticks, so a signal can cut the wait short. */
+let wake: (() => void) | null = null;
+
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, () => {
     stopping = true;
     console.log(`\n${signal} received, finishing current tick then exiting.`);
+    // Without this the process would sit out the remainder of the interval —
+    // up to a full minute — and get hard-killed by the container runtime.
+    wake?.();
+  });
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(resolve, ms);
+    wake = () => {
+      clearTimeout(timer);
+      wake = null;
+      resolve();
+    };
   });
 }
 
@@ -48,11 +65,11 @@ async function tick() {
 async function main() {
   console.log(`[worker] ticking ${url} every ${intervalMs / 1000}s`);
   // The web server may still be booting on the first iteration.
-  await new Promise((resolve) => setTimeout(resolve, 2000));
+  await sleep(2000);
   while (!stopping) {
     await tick();
     if (stopping) break;
-    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+    await sleep(intervalMs);
   }
   process.exit(0);
 }
