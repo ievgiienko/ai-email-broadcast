@@ -1,0 +1,3 @@
+# This is a private admin tool; nothing here should be indexed.
+User-agent: *
+Disallow: /

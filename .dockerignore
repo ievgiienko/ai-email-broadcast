@@ -1,0 +1,13 @@
+node_modules
+.next
+dist-scripts
+.git
+.env
+.env.*
+!.env.example
+npm-debug.log*
+coverage
+tests
+*.md
+!README.md
+.claude

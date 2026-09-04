@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/worker/tick",
+      "//": "Every minute. NOTE: minute-level crons need a Vercel Pro plan; the Hobby plan only runs cron jobs once per day, which cannot drive this queue. See README - Deployment.",
+      "schedule": "* * * * *"
+    }
+  ],
+  "functions": {
+    "src/app/api/worker/tick/route.ts": { "maxDuration": 60 }
+  }
+}

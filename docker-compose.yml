@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: mailer
+      POSTGRES_PASSWORD: mailer
+      POSTGRES_DB: mailer
+    ports:
+      - "5435:5432"
+    volumes:
+      - mailer-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mailer -d mailer"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Optional: the full application, for self-hosting instead of Vercel.
+  # `docker compose --profile app up --build`
+  app:
+    profiles: ["app"]
+    build: .
+    environment:
+      DATABASE_URL: postgres://mailer:mailer@db:5432/mailer
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?set ENCRYPTION_KEY in .env}
+      WORKER_SECRET: ${WORKER_SECRET:?set WORKER_SECRET in .env}
+      # The container runs its own ticker, so no external cron is needed.
+      RUN_INTERNAL_WORKER: "true"
+      SMTP_MAX_EMAILS_PER_HOUR: ${SMTP_MAX_EMAILS_PER_HOUR:-5000}
+    ports:
+      - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  mailer-db:
